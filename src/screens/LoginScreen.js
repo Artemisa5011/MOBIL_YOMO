@@ -6,6 +6,7 @@ import { useTheme } from '../contexts/ThemeProvider'
 import { font } from '../theme/typography'
 import { useAuth } from '../contexts/useAuth'
 import { toastError, toastInfo } from '../lib/appToast'
+import { SUPABASE_DEBUG } from '../lib/supabase'
 
 const LOGO_OSCURO = require('../../assets/logo.jpg')
 const LOGO_CLARO = require('../../assets/logo_claro.jpg')
@@ -16,6 +17,7 @@ export default function LoginScreen({ navigation }) {
   const { signIn } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const onSubmit = async () => {
@@ -27,7 +29,15 @@ export default function LoginScreen({ navigation }) {
     try {
       await signIn(email.trim(), password)
     } catch (e) {
-      toastError('Inicio de sesión', e.message || 'Error al iniciar sesión')
+      const msg = e?.message || ''
+      if (msg.includes('Network request failed')) {
+        toastError(
+          'Red',
+          'No se pudo conectar al servidor (Supabase). Verifica que el teléfono tenga internet y que las variables de Supabase estén configuradas. Reinicia Expo con -c si acabas de cambiar el .env.'
+        )
+      } else {
+        toastError('Inicio de sesión', msg || 'Error al iniciar sesión')
+      }
     } finally {
       setLoading(false)
     }
@@ -47,6 +57,12 @@ export default function LoginScreen({ navigation }) {
       </View>
 
       <View style={styles.form}>
+        {__DEV__ ? (
+          <Text style={styles.debug}>
+            Supabase: {SUPABASE_DEBUG.url} ({SUPABASE_DEBUG.source}) · key:{' '}
+            {SUPABASE_DEBUG.hasAnonKey ? 'ok' : 'missing'}
+          </Text>
+        ) : null}
         <Text style={styles.label}>Correo</Text>
         <TextInput
           style={styles.input}
@@ -59,14 +75,24 @@ export default function LoginScreen({ navigation }) {
         />
 
         <Text style={styles.label}>Contraseña</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="••••••••"
-          placeholderTextColor={colors.muted}
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+        <View style={styles.passwordRow}>
+          <TextInput
+            style={[styles.input, styles.passwordInput]}
+            placeholder="••••••••"
+            placeholderTextColor={colors.muted}
+            secureTextEntry={!showPassword}
+            value={password}
+            onChangeText={setPassword}
+          />
+          <Pressable
+            onPress={() => setShowPassword((v) => !v)}
+            style={({ pressed }) => [styles.showBtn, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+          >
+            <Text style={styles.showBtnText}>{showPassword ? 'Ocultar' : 'Mostrar'}</Text>
+          </Pressable>
+        </View>
 
         <Pressable
           style={({ pressed }) => [styles.btn, loading && styles.btnDisabled, pressed && styles.pressed]}
@@ -123,6 +149,13 @@ function buildStyles(colors) {
       borderColor: colors.border,
       backgroundColor: colors.panel,
     },
+    debug: {
+      color: colors.muted,
+      fontFamily: font.bodyItalic,
+      fontSize: 11,
+      lineHeight: 16,
+      marginBottom: 10,
+    },
     label: {
       fontFamily: font.bodySemi,
       fontSize: 13,
@@ -140,6 +173,19 @@ function buildStyles(colors) {
       fontFamily: font.body,
       fontSize: 17,
     },
+    passwordRow: { flexDirection: 'row', gap: 10, alignItems: 'center', marginBottom: 16 },
+    passwordInput: { flex: 1, marginBottom: 0 },
+    showBtn: {
+      paddingHorizontal: 12,
+      paddingVertical: 12,
+      borderRadius: 2,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    showBtnText: { color: colors.accent, fontFamily: font.bodySemi, fontSize: 13 },
     btn: {
       marginTop: 4,
       paddingVertical: 16,

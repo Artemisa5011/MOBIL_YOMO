@@ -1,13 +1,13 @@
-import { useMemo } from 'react'
+import { useMemo } from 'react' // useState: para el estado del formulario, useMemo: para memoizar el estilo
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native'
-import { GothicBackground } from '../components/GothicBackground'
-import { useTheme } from '../contexts/ThemeProvider'
-import { font } from '../theme/typography'
-
+import { GothicBackground } from '../components/GothicBackground' // componente para el fondo gótico
+import { useTheme } from '../contexts/ThemeProvider' // contexto para el tema global
+import { font } from '../theme/typography' // fuentes de la app
+// Función para crear el componente DashboardScreen
 export default function DashboardScreen({ navigation }) {
   const { colors } = useTheme()
   const styles = useMemo(() => buildStyles(colors), [colors])
-
+// renderizar el componente
   return (
     <GothicBackground style={styles.fill}>
       <ScrollView contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
@@ -50,7 +50,7 @@ export default function DashboardScreen({ navigation }) {
     </GothicBackground>
   )
 }
-
+// Función para crear el estilo del componente buildStyles (buildStyles: función para crear el estilo del componente)
 function buildStyles(colors) {
   return StyleSheet.create({
     fill: { flex: 1 },

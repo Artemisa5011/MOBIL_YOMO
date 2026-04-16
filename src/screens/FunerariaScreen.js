@@ -3,6 +3,7 @@ import {
   View,
   Text,
   ScrollView,
+  RefreshControl,
   TextInput,
   StyleSheet,
   Pressable,
@@ -40,6 +41,7 @@ export default function FunerariaScreen({ route }) {
   const [tarjetaVencimiento, setTarjetaVencimiento] = useState('')
   const [tarjetaCVV, setTarjetaCVV] = useState('')
   const [loading, setLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const [mostrarFormPago, setMostrarFormPago] = useState(false)
   const { servicios: calendario, loading: calLoading } = useServiciosFunerariosRealtime()
 
@@ -70,6 +72,17 @@ export default function FunerariaScreen({ route }) {
       toastError('Error', err.message)
     }
   }
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    try {
+      if (cedula?.trim()) {
+        await buscarCliente(cedula)
+      }
+    } finally {
+      setRefreshing(false)
+    }
+  }, [cedula])
 
   const totalCarrito = carrito.reduce((s, i) => s + i.valor * i.cantidad, 0)
 
@@ -189,7 +202,11 @@ export default function FunerariaScreen({ route }) {
 
   return (
     <GothicBackground style={styles.fill}>
-      <ScrollView contentContainerStyle={styles.inner} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.inner}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
+      >
         <Text style={styles.h1}>Funeraria</Text>
         <Text style={styles.hint}>Máx. 3 servicios por cliente y día. Horas 00:00 u 03:00.</Text>
 
