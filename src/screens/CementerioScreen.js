@@ -27,7 +27,7 @@ import { font } from '../theme/typography' // fuentes de la app
 
 const fmt = (n) => Number(n ?? 0).toLocaleString('es-CO') // función para formatear un número como una cadena de texto
 
-export default function CementerioScreen({ route }) { // componente para el cementerio
+export default function CementerioScreen({ route, navigation }) {
   const { colors } = useTheme() 
   const styles = useMemo(() => buildStyles(colors), [colors])
   const { user } = useAuth()
@@ -50,7 +50,22 @@ export default function CementerioScreen({ route }) { // componente para el ceme
   const [tarjetaCVV, setTarjetaCVV] = useState('') // tarjetaCVV: CVV de la tarjeta
   const [loading, setLoading] = useState(false) // loading: si se está cargando el proceso
   const [respuestasSombra, setRespuestasSombra] = useState({}) // respuestasSombra: respuestas del test de la sombra
-  const [reservarAlmasInocentes, setReservarAlmasInocentes] = useState(false) // reservarAlmasInocentes: si se está reservando almas inocentes  
+  const [reservarAlmasInocentes, setReservarAlmasInocentes] = useState(false) // reservarAlmasInocentes: si se está reservando almas inocentes
+  const [cedulaNoRegistrada, setCedulaNoRegistrada] = useState(false)
+
+  const irARegistrarCliente = () => {
+    const c = cedula.trim()
+    if (!c) return
+    navigation.getParent()?.navigate('Clientes', {
+      screen: 'ClienteNuevo',
+      params: { cedula: c },
+    })
+  }
+
+  const onCedulaChange = (t) => {
+    setCedula(t)
+    setCedulaNoRegistrada(false)
+  }
 
   const cargarLotes = async () => { // cargarLotes: función para cargar la lista de lotes 
     setLotesLoading(true) // activar el loading 
@@ -77,13 +92,16 @@ export default function CementerioScreen({ route }) { // componente para el ceme
     try {
       const { data, notFound } = await clientesApi.getClienteByCedula(ced) // buscar el cliente por cédula
       if (notFound) {
-        setCliente(null) // setear el cliente como null
-        toastInfo('Cliente', 'Cliente no encontrado. Regístralo primero.')
-        return // si el cliente no es encontrado, retornar
+        setCliente(null)
+        setCedulaNoRegistrada(true)
+        toastInfo('Cliente', 'No hay registro con esta cédula. Puedes crearlo desde el botón de abajo.')
+        return
       }
+      setCedulaNoRegistrada(false)
       setCliente(data) // setear el cliente como el cliente encontrado
     } catch (err) {
-      toastError('Error', err.message) // mostrar el error
+      toastError('Error', err.message)
+      setCedulaNoRegistrada(false)
     }
   }
 
@@ -247,6 +265,14 @@ export default function CementerioScreen({ route }) { // componente para el ceme
 
   const p = PREGUNTA_PECADO_INICIAL
   const resultadoLive = calcularResultadoSombra(respuestasSombra)
+  const lotesOrdenados = useMemo(() => {
+    const rows = Array.isArray(lotes) ? [...lotes] : []
+    return rows.sort((a, b) => {
+      const na = String(a?.nombre || '').localeCompare(String(b?.nombre || ''), 'es')
+      if (na !== 0) return na
+      return String(a?.codigo || '').localeCompare(String(b?.codigo || ''), 'es')
+    })
+  }, [lotes])
 
   return (
     <GothicBackground style={styles.fill}>
@@ -260,14 +286,52 @@ export default function CementerioScreen({ route }) { // componente para el ceme
             placeholder="Cédula"
             placeholderTextColor={colors.muted}
             value={cedula}
-            onChangeText={setCedula}
+            onChangeText={onCedulaChange}
             keyboardType="numeric"
           />
           <Pressable style={styles.btnSm} onPress={() => buscarCliente(cedula)}>
             <Text style={styles.btnSmTxt}>Buscar</Text>
           </Pressable>
         </View>
+        {cedulaNoRegistrada ? (
+          <View style={styles.notFoundBox}>
+            <Text style={styles.notFoundText}>Esta cédula no está en el registro de almas.</Text>
+            <Pressable style={styles.notFoundBtn} onPress={irARegistrarCliente}>
+              <Text style={styles.notFoundBtnTxt}>Registrar nuevo cliente</Text>
+            </Pressable>
+          </View>
+        ) : null}
         {cliente ? <Text style={styles.ok}>Cliente: {cliente.nombre_completo}</Text> : null}
+
+        <View style={styles.catalogoBox}>
+          <View style={styles.catalogoHead}>
+            <Text style={styles.catalogoTitle}>Catálogo de lotes</Text>
+            <Pressable style={styles.catalogoReload} onPress={cargarLotes} disabled={lotesLoading}>
+              <Text style={styles.catalogoReloadTxt}>{lotesLoading ? 'Cargando…' : 'Actualizar'}</Text>
+            </Pressable>
+          </View>
+          {lotesLoading ? (
+            <ActivityIndicator color={colors.accent} style={{ marginTop: 8 }} />
+          ) : lotesOrdenados.length === 0 ? (
+            <Text style={styles.muted}>No hay lotes para mostrar (catálogo vacío o sin permisos).</Text>
+          ) : (
+            <ScrollView style={styles.catalogoList} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+              {lotesOrdenados.map((l) => (
+                <View key={String(l.id)} style={styles.catalogoRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.catalogoName} numberOfLines={1}>
+                      {l.nombre || 'Lote'}
+                    </Text>
+                    <Text style={styles.catalogoMeta} numberOfLines={1}>
+                      {l.codigo ? `Código ${l.codigo}` : '—'} · Ocupación {l.capacidad_ocupada ?? 0}/{l.capacidad_total ?? 0}
+                    </Text>
+                  </View>
+                  <Text style={styles.catalogoPrice}>${fmt(l.valor)}</Text>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+        </View>
 
         {paso === 1 && (
           <View>
@@ -478,7 +542,7 @@ function buildStyles(colors) {
     inner: { padding: 16, paddingBottom: 48 },
     h1: { fontFamily: font.displayHeavy, fontSize: 22, color: colors.text },
     h2: { fontFamily: font.displayRegular, color: colors.gold, marginTop: 12, marginBottom: 8 },
-    hint: { color: colors.muted, fontFamily: font.bodyItalic, marginVertical: 8 },
+    hint: { color: colors.muted, fontFamily: font.bodyItalic, marginVertical: 8, textAlign: 'justify' },
     row: { flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' },
     inputFlex: {
       flex: 1,
@@ -500,7 +564,64 @@ function buildStyles(colors) {
     },
     btnSm: { backgroundColor: colors.accentSoft, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 2 },
     btnSmTxt: { color: colors.text },
+    notFoundBox: {
+      marginBottom: 12,
+      padding: 12,
+      borderRadius: 2,
+      borderWidth: 1,
+      borderColor: colors.goldMuted,
+      backgroundColor: colors.panel,
+    },
+    notFoundText: {
+      color: colors.textDim,
+      fontFamily: font.bodyItalic,
+      fontSize: 14,
+      marginBottom: 10,
+    },
+    notFoundBtn: {
+      alignSelf: 'flex-start',
+      backgroundColor: colors.accentSoft,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 2,
+      borderWidth: 1,
+      borderColor: colors.borderGlow,
+    },
+    notFoundBtnTxt: { color: colors.text, fontFamily: font.bodySemi, fontSize: 14 },
     ok: { color: '#4ade80', marginBottom: 8 },
+    catalogoBox: {
+      marginTop: 10,
+      marginBottom: 10,
+      padding: 12,
+      borderRadius: 2,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.panel,
+    },
+    catalogoHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+    catalogoTitle: { fontFamily: font.displayRegular, color: colors.gold, letterSpacing: 1.2 },
+    catalogoReload: {
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+      borderRadius: 2,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+    },
+    catalogoReloadTxt: { color: colors.textDim, fontFamily: font.bodySemi, fontSize: 12 },
+    catalogoList: { maxHeight: 220, marginTop: 10 },
+    catalogoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 10,
+      paddingVertical: 8,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    catalogoName: { color: colors.text, fontFamily: font.bodySemi, fontSize: 14 },
+    catalogoMeta: { color: colors.muted, fontFamily: font.bodyItalic, fontSize: 12, marginTop: 2 },
+    catalogoPrice: { color: colors.accent, fontFamily: font.bodySemi, fontSize: 14 },
     label: { color: colors.muted, fontFamily: font.bodySemi, marginTop: 8, marginBottom: 4 },
     wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     opt: { padding: 8, borderWidth: 1, borderColor: colors.border, borderRadius: 16 },

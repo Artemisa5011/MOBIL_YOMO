@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react' // useState: para el estado del formulario, useMemo: para memoizar el estilo
+import { useMemo, useState, useEffect } from 'react' // useState: para el estado del formulario, useMemo: para memoizar el estilo
 import { View, Text, TextInput, StyleSheet, Pressable, ActivityIndicator } from 'react-native'
 import { ScreenScroll } from '../components/ScreenScroll' // componente para el scroll de la pantalla
 import * as clientesApi from '../api/clientesApi' // api para los clientes
@@ -26,18 +26,25 @@ function Field({ label, value, onChangeText, error, keyboardType, autoCapitalize
 }
 
 // Función para crear el componente ClienteNuevoScreen
-export default function ClienteNuevoScreen({ navigation }) {
+export default function ClienteNuevoScreen({ navigation, route }) {
   const { colors } = useTheme()
   const styles = useMemo(() => buildStyles(colors), [colors])
   const { user } = useAuth()
+  const cedulaPrefill = route.params?.cedula?.trim() ?? ''
   const [form, setForm] = useState({
-    cedula: '',
+    cedula: cedulaPrefill,
     nombre_completo: '',
     telefono: '',
     correo: '',
     departamento: '',
     ciudad: '',
   }) // form: formulario del cliente
+
+  useEffect(() => {
+    if (cedulaPrefill) {
+      setForm((f) => ({ ...f, cedula: cedulaPrefill }))
+    }
+  }, [cedulaPrefill])
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
 

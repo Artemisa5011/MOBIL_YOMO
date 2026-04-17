@@ -1,7 +1,7 @@
 import { ScrollView, StyleSheet } from 'react-native'
 import { GothicBackground } from './GothicBackground'
 
-export function ScreenScroll({ children, contentStyle, gradientVariant = 'main' }) {
+export function ScreenScroll({ children, contentStyle, gradientVariant = 'main', refreshControl }) {
   return (
     <GothicBackground variant={gradientVariant} style={styles.root}>
       <ScrollView
@@ -9,6 +9,7 @@ export function ScreenScroll({ children, contentStyle, gradientVariant = 'main' 
         contentContainerStyle={[styles.inner, contentStyle]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        refreshControl={refreshControl}
       >
         {children}
       </ScrollView>

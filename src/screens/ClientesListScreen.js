@@ -122,7 +122,14 @@ export default function ClientesListScreen({ navigation }) {
       <FlatList
         data={filtrados}
         keyExtractor={(item) => String(item.id)}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.accent}
+            colors={[colors.accent]}
+          />
+        }
         ListEmptyComponent={
           <Text style={styles.empty}>No hay clientes para mostrar. Crea uno desde el botón +.</Text>
         }

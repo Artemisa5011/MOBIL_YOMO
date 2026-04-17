@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { View, Text, StyleSheet, Pressable, ActivityIndicator, Alert, ScrollView } from 'react-native'
+import { View, Text, StyleSheet, Pressable, ActivityIndicator, Alert, ScrollView, RefreshControl } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import * as clientesApi from '../api/clientesApi'
 import * as serviciosFunerariosApi from '../api/serviciosFunerariosApi'
@@ -20,10 +20,13 @@ export default function ClienteDetailScreen({ route, navigation }) { // componen
   const [servicios, setServicios] = useState([]) // servicios: servicios del cliente
   const [reservas, setReservas] = useState([]) // reservas: reservas del cliente
   const [loading, setLoading] = useState(true) // loading: si se está cargando el detalle
+  const [refreshing, setRefreshing] = useState(false)
   const [fav, setFav] = useState(false) // fav: si el cliente es favorito
 
   // cargar: función para cargar el detalle del cliente
-  const cargar = async () => { 
+  const cargar = async (fromRefresh = false) => {
+    if (!fromRefresh) setLoading(true)
+    else setRefreshing(true)
     try {
       const [cli, srv, res] = await Promise.all([
         clientesApi.getClienteById(id),
@@ -37,16 +40,16 @@ export default function ClienteDetailScreen({ route, navigation }) { // componen
       setFav(f)
     } catch (e) {
       toastError('Error', e.message || 'No se pudo cargar')
-      navigation.goBack()
+      if (!fromRefresh) navigation.goBack()
     } finally {
-      setLoading(false)
+      if (!fromRefresh) setLoading(false)
+      setRefreshing(false)
     }
   }
 
   useFocusEffect( // useFocusEffect: para escuchar cambios en la navegación
     useCallback(() => {
-      setLoading(true)
-      cargar()
+      cargar(false)
     }, [id])
   )
 
@@ -91,7 +94,18 @@ export default function ClienteDetailScreen({ route, navigation }) { // componen
 // renderizar el componente
   return ( 
     <GothicBackground style={styles.fill}>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.inner}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.inner}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => cargar(true)}
+            tintColor={colors.accent}
+            colors={[colors.accent]}
+          />
+        }
+      >
         <View style={styles.actions}>
           <Pressable style={[styles.chip, fav && styles.chipOn]} onPress={onToggleFav}>
             <Text style={styles.chipText}>{fav ? 'Quitar de guardados' : 'Guardar en favoritos'}</Text>

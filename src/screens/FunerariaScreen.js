@@ -24,7 +24,7 @@ import { toastSuccess, toastError, toastInfo } from '../lib/appToast'
 
 const fmt = (n) => Number(n ?? 0).toLocaleString('es-CO')
 
-export default function FunerariaScreen({ route }) {
+export default function FunerariaScreen({ route, navigation }) {
   const { colors } = useTheme()
   const styles = useMemo(() => buildStyles(colors), [colors])
   const { user } = useAuth()
@@ -44,6 +44,21 @@ export default function FunerariaScreen({ route }) {
   const [refreshing, setRefreshing] = useState(false)
   const [mostrarFormPago, setMostrarFormPago] = useState(false)
   const { servicios: calendario, loading: calLoading } = useServiciosFunerariosRealtime()
+  const [cedulaNoRegistrada, setCedulaNoRegistrada] = useState(false)
+
+  const irARegistrarCliente = () => {
+    const c = cedula.trim()
+    if (!c) return
+    navigation.getParent()?.navigate('Clientes', {
+      screen: 'ClienteNuevo',
+      params: { cedula: c },
+    })
+  }
+
+  const onCedulaChange = (t) => {
+    setCedula(t)
+    setCedulaNoRegistrada(false)
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -60,16 +75,20 @@ export default function FunerariaScreen({ route }) {
       const { data, notFound } = await clientesApi.getClienteByCedula(ced)
       if (notFound) {
         setCliente(null)
-        toastInfo('Cliente', 'Cliente no encontrado. Regístralo primero.')
+        setCedulaNoRegistrada(true)
+        toastInfo('Cliente', 'No hay registro con esta cédula. Puedes crearlo desde el botón de abajo.')
         return
       }
+      setCedulaNoRegistrada(false)
       if (data.estado !== 'activo' && data.estado !== 'verdugo') {
+        setCliente(null)
         toastInfo('Cliente', 'El cliente no puede contratar servicios')
         return
       }
       setCliente(data)
     } catch (err) {
       toastError('Error', err.message)
+      setCedulaNoRegistrada(false)
     }
   }
 
@@ -216,13 +235,21 @@ export default function FunerariaScreen({ route }) {
             placeholder="Cédula del cliente"
             placeholderTextColor={colors.muted}
             value={cedula}
-            onChangeText={setCedula}
+            onChangeText={onCedulaChange}
             keyboardType="numeric"
           />
           <Pressable style={styles.btnBuscar} onPress={() => buscarCliente(cedula)}>
             <Text style={styles.btnBuscarTxt}>Buscar</Text>
           </Pressable>
         </View>
+        {cedulaNoRegistrada ? (
+          <View style={styles.notFoundBox}>
+            <Text style={styles.notFoundText}>Esta cédula no está en el registro de almas.</Text>
+            <Pressable style={styles.notFoundBtn} onPress={irARegistrarCliente}>
+              <Text style={styles.notFoundBtnTxt}>Registrar nuevo cliente</Text>
+            </Pressable>
+          </View>
+        ) : null}
         {cliente ? (
           <Text style={styles.ok}>Cliente: {cliente.nombre_completo} ({cliente.estado})</Text>
         ) : null}
@@ -374,25 +401,27 @@ export default function FunerariaScreen({ route }) {
 function buildStyles(colors) {
   return StyleSheet.create({
     fill: { flex: 1 },
-    inner: { padding: 16, paddingBottom: 48 },
-    h1: { fontFamily: font.displayHeavy, fontSize: 20, color: colors.text },
-    hint: { fontFamily: font.bodyItalic, color: colors.muted, marginBottom: 12, marginTop: 4 },
+    inner: { padding: 14, paddingBottom: 44 },
+    h1: { fontFamily: font.displayHeavy, fontSize: 19, color: colors.text, letterSpacing: 0.3 },
+    hint: { fontFamily: font.bodyItalic, fontSize: 13, lineHeight: 18, color: colors.muted, marginBottom: 10, marginTop: 4, textAlign: 'justify' },
     row: { flexDirection: 'row', gap: 8, alignItems: 'center', marginBottom: 8 },
-    rowWrap: { flexWrap: 'wrap', flexDirection: 'row', gap: 8, marginBottom: 12 },
+    rowWrap: { flexWrap: 'wrap', flexDirection: 'row', gap: 8, marginBottom: 10 },
     inputFlex: {
       flex: 1,
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: 2,
-      padding: 12,
+      borderRadius: 10,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
       color: colors.text,
       backgroundColor: colors.inputBg,
     },
     input: {
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: 2,
-      padding: 12,
+      borderRadius: 10,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
       color: colors.text,
       backgroundColor: colors.inputBg,
       marginBottom: 8,
@@ -400,11 +429,49 @@ function buildStyles(colors) {
     inputDate: { minWidth: 140, flex: 1 },
     flex1: { flex: 1 },
     cvv: { width: 80 },
-    btnBuscar: { backgroundColor: colors.accentSoft, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 2 },
-    btnBuscarTxt: { color: colors.text, fontFamily: font.bodySemi },
+    btnBuscar: {
+      backgroundColor: colors.accentSoft,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.borderGlow,
+    },
+    btnBuscarTxt: { color: colors.text, fontFamily: font.displayRegular, fontSize: 12, letterSpacing: 0.6 },
+    notFoundBox: {
+      marginBottom: 12,
+      padding: 12,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.goldMuted,
+      backgroundColor: colors.panel,
+    },
+    notFoundText: {
+      color: colors.textDim,
+      fontFamily: font.bodyItalic,
+      fontSize: 14,
+      marginBottom: 10,
+    },
+    notFoundBtn: {
+      alignSelf: 'flex-start',
+      backgroundColor: colors.accentSoft,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.borderGlow,
+    },
+    notFoundBtnTxt: { color: colors.text, fontFamily: font.bodySemi, fontSize: 14 },
     ok: { color: '#4ade80', marginBottom: 8 },
     horas: { flexDirection: 'row', gap: 8 },
-    chip: { paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: colors.border, borderRadius: 2 },
+    chip: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 999,
+      backgroundColor: colors.card,
+    },
     chipOn: { borderColor: colors.accent, backgroundColor: colors.funerariaChipOn },
     chipTxt: { color: colors.textDim },
     servCard: {
@@ -413,38 +480,49 @@ function buildStyles(colors) {
       borderWidth: 1,
       borderColor: colors.purple,
       backgroundColor: colors.funerariaCal,
-      borderRadius: 2,
+      borderRadius: 12,
     },
     servTitle: { fontFamily: font.bodySemi, color: colors.accent, fontSize: 17 },
     servPrecio: { color: colors.textDim, marginVertical: 6 },
-    btnContratar: { alignSelf: 'flex-start', backgroundColor: colors.accentSoft, paddingHorizontal: 14, paddingVertical: 8 },
-    btnContratarTxt: { color: colors.text },
+    btnContratar: {
+      alignSelf: 'flex-start',
+      backgroundColor: colors.accentSoft,
+      paddingHorizontal: 14,
+      paddingVertical: 9,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: colors.borderGlow,
+    },
+    btnContratarTxt: { color: colors.text, fontFamily: font.displayRegular, fontSize: 12, letterSpacing: 0.6 },
     label: { fontFamily: font.bodySemi, color: colors.muted, marginTop: 8 },
-    total: { fontFamily: font.displayRegular, color: colors.gold, fontSize: 18, marginVertical: 8 },
+    total: { fontFamily: font.displayRegular, color: colors.gold, fontSize: 16, marginVertical: 8, letterSpacing: 0.6 },
     carritoBox: { marginBottom: 12 },
     carritoRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
     carritoTxt: { color: colors.textDim, flex: 1, fontSize: 13 },
     quitar: { color: colors.danger },
     btnPactar: {
       backgroundColor: colors.accentSoft,
-      padding: 14,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
       alignItems: 'center',
-      borderRadius: 2,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.borderGlow,
       marginTop: 8,
     },
-    btnPactarTxt: { fontFamily: font.displayRegular, color: colors.text, letterSpacing: 1 },
-    pagoBox: { marginTop: 12, padding: 12, borderWidth: 1, borderColor: colors.border },
-    radioRow: { padding: 10, marginBottom: 6, borderWidth: 1, borderColor: colors.border, borderRadius: 2 },
+    btnPactarTxt: { fontFamily: font.displayRegular, color: colors.text, fontSize: 12, letterSpacing: 0.9 },
+    pagoBox: { marginTop: 12, padding: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.panel },
+    radioRow: { padding: 10, marginBottom: 6, borderWidth: 1, borderColor: colors.border, borderRadius: 10, backgroundColor: colors.card },
     radioOn: { borderColor: colors.accent },
     radioTxt: { color: colors.text },
     btnConfirm: {
       flex: 1,
       backgroundColor: '#14532d',
-      padding: 12,
+      paddingVertical: 12,
       alignItems: 'center',
-      borderRadius: 2,
+      borderRadius: 12,
     },
-    btnConfirmTxt: { color: '#fff', fontWeight: '700' },
+    btnConfirmTxt: { color: '#fff', fontFamily: font.displayRegular, fontSize: 12, letterSpacing: 0.6 },
     cancel: { color: colors.accent, padding: 12 },
     muted: { color: colors.muted },
     calRow: { color: colors.textDim, marginBottom: 4, fontSize: 14 },

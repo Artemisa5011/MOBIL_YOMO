@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, SectionList, RefreshControl, ActivityIndicator } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import * as reservasCementerioApi from '../api/reservasCementerioApi'
 import * as serviciosFunerariosApi from '../api/serviciosFunerariosApi'
@@ -45,6 +45,49 @@ export default function MiCementerioScreen() {
     }, [user])
   )
 
+  const sections = useMemo(
+    () => [
+      {
+        key: 'servicios',
+        title: 'Mis servicios funerarios',
+        emptyHint:
+          'No tienes servicios vinculados. Tu cédula en el portal debe coincidir con la del cliente en la venta web.',
+        data: servicios.length ? servicios : [{ __empty: true, __key: 'empty-srv' }],
+      },
+      {
+        key: 'reservas',
+        title: 'Mis reservas de cementerio',
+        emptyHint: 'No hay reservas confirmadas.',
+        data: reservas.length ? reservas : [{ __empty: true, __key: 'empty-res' }],
+      },
+    ],
+    [servicios, reservas]
+  )
+
+  const renderItem = ({ item, section }) => {
+    if (item.__empty) {
+      return <Text style={styles.muted}>{section.emptyHint}</Text>
+    }
+    if (section.key === 'servicios') {
+      return (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>{item.tipo}</Text>
+          <Text style={styles.line}>
+            {item.fecha} {item.hora ? `· ${item.hora}` : ''}
+          </Text>
+          <Text style={styles.line}>Difunto: {item.nombre_difunto || '—'}</Text>
+          <Text style={styles.line}>${fmt(item.valor)}</Text>
+        </View>
+      )
+    }
+    return (
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>{item.lotes?.nombre || item.lotes?.codigo || 'Lote'}</Text>
+        <Text style={styles.line}>Pago: {item.estado_pago}</Text>
+      </View>
+    )
+  }
+
   if (loading && servicios.length === 0 && reservas.length === 0) {
     return (
       <GothicBackground style={styles.fill}>
@@ -58,43 +101,28 @@ export default function MiCementerioScreen() {
 
   return (
     <GothicBackground style={styles.fill}>
-      <ScrollView
+      <SectionList
         style={styles.scroll}
+        sections={sections}
+        keyExtractor={(item, index) => (item.__empty ? item.__key : String(item.id ?? index))}
+        renderSectionHeader={({ section }) => (
+          <Text style={[styles.h1, section.key === 'reservas' && styles.h1Spaced]}>{section.title}</Text>
+        )}
+        renderItem={renderItem}
         contentContainerStyle={styles.inner}
+        stickySectionHeadersEnabled={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); cargar() }} tintColor={colors.accent} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true)
+              cargar()
+            }}
+            tintColor={colors.accent}
+            colors={[colors.accent]}
+          />
         }
-      >
-        <Text style={styles.h1}>Mis servicios funerarios</Text>
-        {servicios.length === 0 ? (
-          <Text style={styles.muted}>
-            No tienes servicios vinculados. Tu cédula en el portal debe coincidir con la del cliente en la venta web.
-          </Text>
-        ) : (
-          servicios.map((s) => (
-            <View key={s.id} style={styles.card}>
-              <Text style={styles.cardTitle}>{s.tipo}</Text>
-              <Text style={styles.line}>
-                {s.fecha} {s.hora ? `· ${s.hora}` : ''}
-              </Text>
-              <Text style={styles.line}>Difunto: {s.nombre_difunto || '—'}</Text>
-              <Text style={styles.line}>${fmt(s.valor)}</Text>
-            </View>
-          ))
-        )}
-
-        <Text style={[styles.h1, { marginTop: 24 }]}>Mis reservas de cementerio</Text>
-        {reservas.length === 0 ? (
-          <Text style={styles.muted}>No hay reservas confirmadas.</Text>
-        ) : (
-          reservas.map((r) => (
-            <View key={r.id} style={styles.card}>
-              <Text style={styles.cardTitle}>{r.lotes?.nombre || r.lotes?.codigo || 'Lote'}</Text>
-              <Text style={styles.line}>Pago: {r.estado_pago}</Text>
-            </View>
-          ))
-        )}
-      </ScrollView>
+      />
     </GothicBackground>
   )
 }
@@ -112,6 +140,7 @@ function buildStyles(colors) {
       color: colors.gold,
       marginBottom: 12,
     },
+    h1Spaced: { marginTop: 24 },
     muted: { color: colors.muted, lineHeight: 22, fontFamily: font.bodyItalic, fontSize: 16 },
     line: { color: colors.textDim, marginTop: 4, fontFamily: font.body, fontSize: 16 },
     card: {

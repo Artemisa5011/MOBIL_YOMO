@@ -78,7 +78,15 @@ export default function GuardadosScreen({ navigation }) {
           data={items}
           keyExtractor={(item) => String(item.id)}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); cargar() }} tintColor={colors.accent} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => {
+                setRefreshing(true)
+                cargar()
+              }}
+              tintColor={colors.accent}
+              colors={[colors.accent]}
+            />
           }
           ListEmptyComponent={<Text style={styles.empty}>No hay guardados. Abre un cliente y pulsa guardar.</Text>}
           renderItem={({ item }) => (

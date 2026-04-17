@@ -1,5 +1,14 @@
 import { useState, useCallback, useMemo } from 'react' // useState: para el estado de la cédula, useCallback: para evitar recálculos innecesarios, useMemo: para memoizar el estilo
-import { View, Text, ScrollView, TextInput, StyleSheet, Pressable, ActivityIndicator, FlatList } from 'react-native'
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  Pressable,
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+} from 'react-native'
 import { useFocusEffect } from '@react-navigation/native' // useFocusEffect: para escuchar cambios en la navegación
 import { GothicBackground } from '../components/GothicBackground'
 import * as solicitudesApi from '../api/solicitudesApi' // api para las solicitudes de contacto
@@ -17,13 +26,15 @@ export default function AdminScreen() {
   const [loadingVin, setLoadingVin] = useState(false) // loadingVin: si se está cargando el vinculo de servicios/reservas por cédula
   const [solicitudes, setSolicitudes] = useState([]) // solicitudes: lista de solicitudes de contacto
   const [loadingSol, setLoadingSol] = useState(true) // loadingSol: si se está cargando la lista de solicitudes de contacto
+  const [refreshing, setRefreshing] = useState(false)
 
-  const cargar = async () => { // cargar: función para cargar la lista de solicitudes de contacto
+  const cargar = async (isRefresh = false) => {
     if (!isAdmin) {
       setLoadingSol(false)
       return
     }
-    setLoadingSol(true)
+    if (isRefresh) setRefreshing(true)
+    else setLoadingSol(true)
     try {
       const data = await solicitudesApi.listarSolicitudesAdmin()
       setSolicitudes(data)
@@ -31,6 +42,7 @@ export default function AdminScreen() {
       toastError('Solicitudes', e.message || 'Sin permiso o error de red')
     } finally {
       setLoadingSol(false)
+      setRefreshing(false)
     }
   }
 
@@ -72,47 +84,65 @@ export default function AdminScreen() {
     )
   }
 
-  return ( // renderizar el componente
+  const header = (
+    <View style={styles.headerBlock}>
+      <Text style={styles.h1}>Administración</Text>
+      <Text style={styles.hint}>Solicitudes de contacto y vínculo portal por cédula (RPC como en la web).</Text>
+
+      <Text style={styles.label}>Vincular servicios/reservas por cédula</Text>
+      <View style={styles.row}>
+        <TextInput
+          style={styles.input}
+          placeholder="Cédula"
+          placeholderTextColor={colors.muted}
+          value={cedula}
+          onChangeText={setCedula}
+          keyboardType="numeric"
+        />
+        <Pressable style={styles.btn} onPress={vincular} disabled={loadingVin}>
+          {loadingVin ? <ActivityIndicator color={colors.text} /> : <Text style={styles.btnTxt}>Vincular</Text>}
+        </Pressable>
+      </View>
+
+      <Text style={[styles.h2, { marginTop: 20 }]}>Solicitudes de contacto</Text>
+    </View>
+  )
+
+  return (
     <GothicBackground style={styles.fill}>
-      <ScrollView contentContainerStyle={styles.inner}>
-        <Text style={styles.h1}>Administración</Text>
-        <Text style={styles.hint}>Solicitudes de contacto y vínculo portal por cédula (RPC como en la web).</Text>
-
-        <Text style={styles.label}>Vincular servicios/reservas por cédula</Text>
-        <View style={styles.row}>
-          <TextInput
-            style={styles.input}
-            placeholder="Cédula"
-            placeholderTextColor={colors.muted}
-            value={cedula}
-            onChangeText={setCedula}
-            keyboardType="numeric"
+      <FlatList
+        data={solicitudes}
+        keyExtractor={(item, i) => String(item.id ?? i)}
+        contentContainerStyle={styles.listContent}
+        ListHeaderComponent={header}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => cargar(true)}
+            tintColor={colors.accent}
+            colors={[colors.accent]}
           />
-          <Pressable style={styles.btn} onPress={vincular} disabled={loadingVin}>
-            {loadingVin ? <ActivityIndicator color={colors.text} /> : <Text style={styles.btnTxt}>Vincular</Text>}
-          </Pressable>
-        </View>
-
-        <Text style={[styles.h2, { marginTop: 20 }]}>Solicitudes de contacto</Text>
-        {loadingSol ? (
-          <ActivityIndicator color={colors.accent} />
-        ) : (
-          <FlatList
-            data={solicitudes}
-            keyExtractor={(item, i) => String(item.id ?? i)}
-            scrollEnabled={false}
-            ListEmptyComponent={<Text style={styles.muted}>No hay solicitudes.</Text>}
-            renderItem={({ item }) => (
-              <View style={styles.solCard}>
-                <Text style={styles.solName}>{item.nombre || item.correo}</Text>
-                <Text style={styles.solMeta}>{item.cedula} · {item.correo}</Text>
-                <Text style={styles.solMsg} numberOfLines={4}>{item.mensaje}</Text>
-                <Text style={styles.solEst}>{item.estado || '—'}</Text>
-              </View>
-            )}
-          />
+        }
+        ListEmptyComponent={
+          loadingSol ? (
+            <ActivityIndicator color={colors.accent} style={styles.listSpinner} size="large" />
+          ) : (
+            <Text style={styles.muted}>No hay solicitudes.</Text>
+          )
+        }
+        renderItem={({ item }) => (
+          <View style={styles.solCard}>
+            <Text style={styles.solName}>{item.nombre || item.correo}</Text>
+            <Text style={styles.solMeta}>
+              {item.cedula} · {item.correo}
+            </Text>
+            <Text style={styles.solMsg} numberOfLines={4}>
+              {item.mensaje}
+            </Text>
+            <Text style={styles.solEst}>{item.estado || '—'}</Text>
+          </View>
         )}
-      </ScrollView>
+      />
     </GothicBackground>
   )
 }
@@ -121,7 +151,9 @@ function buildStyles(colors) {
   return StyleSheet.create({
     fill: { flex: 1 },
     center: { flex: 1, padding: 24, justifyContent: 'center' },
-    inner: { padding: 16, paddingBottom: 40 },
+    headerBlock: { paddingHorizontal: 16, paddingTop: 16 },
+    listContent: { paddingHorizontal: 16, paddingBottom: 40 },
+    listSpinner: { marginVertical: 28 },
     h1: { fontFamily: font.displayHeavy, fontSize: 22, color: colors.text },
     h2: { fontFamily: font.displayRegular, color: colors.gold },
     hint: { color: colors.muted, marginVertical: 10, fontFamily: font.bodyItalic },

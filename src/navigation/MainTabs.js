@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { StyleSheet } from 'react-native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { Ionicons } from '@expo/vector-icons'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import HomeScreen from '../screens/HomeScreen'
 import PanelStack from './PanelStack'
 import ClientesStack from './ClientesStack'
@@ -16,6 +17,9 @@ const Tab = createBottomTabNavigator()
 export default function MainTabs() {
   const { isCliente } = useAuth()
   const { colors } = useTheme()
+  const insets = useSafeAreaInsets()
+  /** Barra compacta (solo iconos) para diferenciarla de la barra del sistema Android. */
+  const tabBarH = 44 + insets.bottom
 
   const screenOptions = useMemo(
     () => ({
@@ -26,20 +30,30 @@ export default function MainTabs() {
       },
       headerTintColor: colors.gold,
       headerTitleStyle: { fontFamily: font.displayRegular, fontSize: 16, letterSpacing: 1 },
+      tabBarShowLabel: false,
       tabBarStyle: {
         backgroundColor: colors.bgElevated,
-        borderTopColor: colors.border,
-        borderTopWidth: 1,
-        paddingTop: 4,
-        height: 58,
+        borderTopWidth: StyleSheet.hairlineWidth,
+        borderTopColor: colors.goldMuted,
+        paddingTop: 2,
+        paddingBottom: Math.max(insets.bottom, 2),
+        height: tabBarH,
+        elevation: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
       },
       tabBarActiveTintColor: colors.accent,
       tabBarInactiveTintColor: colors.muted,
-      tabBarLabelStyle: { fontFamily: font.bodySemi, fontSize: 11, letterSpacing: 0.3 },
+      tabBarIconStyle: { marginTop: 2 },
+      tabBarItemStyle: { paddingVertical: 4 },
       tabBarHideOnKeyboard: true,
     }),
-    [colors]
+    [colors, insets.bottom, tabBarH]
   )
+
+  const iconSize = 22
 
   return (
     <Tab.Navigator screenOptions={screenOptions}>
@@ -48,7 +62,8 @@ export default function MainTabs() {
         component={HomeScreen}
         options={{
           title: 'Inicio',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
+          tabBarAccessibilityLabel: 'Inicio',
+          tabBarIcon: ({ color }) => <Ionicons name="home-outline" size={iconSize} color={color} />,
         }}
       />
       {isCliente ? (
@@ -57,7 +72,8 @@ export default function MainTabs() {
           component={MiCementerioScreen}
           options={{
             title: 'Mis difuntos',
-            tabBarIcon: ({ color, size }) => <Ionicons name="flower-outline" size={size} color={color} />,
+            tabBarAccessibilityLabel: 'Mis difuntos',
+            tabBarIcon: ({ color }) => <Ionicons name="flower-outline" size={iconSize} color={color} />,
           }}
         />
       ) : (
@@ -68,7 +84,8 @@ export default function MainTabs() {
             options={{
               headerShown: false,
               title: 'Panel',
-              tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline" size={size} color={color} />,
+              tabBarAccessibilityLabel: 'Panel',
+              tabBarIcon: ({ color }) => <Ionicons name="grid-outline" size={iconSize} color={color} />,
             }}
           />
           <Tab.Screen
@@ -77,7 +94,8 @@ export default function MainTabs() {
             options={{
               headerShown: false,
               title: 'Clientes',
-              tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} />,
+              tabBarAccessibilityLabel: 'Clientes',
+              tabBarIcon: ({ color }) => <Ionicons name="people-outline" size={iconSize} color={color} />,
             }}
           />
           <Tab.Screen
@@ -85,7 +103,8 @@ export default function MainTabs() {
             component={GuardadosScreen}
             options={{
               title: 'Guardados',
-              tabBarIcon: ({ color, size }) => <Ionicons name="bookmark-outline" size={size} color={color} />,
+              tabBarAccessibilityLabel: 'Guardados',
+              tabBarIcon: ({ color }) => <Ionicons name="bookmark-outline" size={iconSize} color={color} />,
             }}
           />
         </>

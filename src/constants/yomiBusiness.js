@@ -12,7 +12,7 @@ export const HORAS_FUNERARIA = [
 ]
 
 export const COSTO_CAMBIO_LOTE = 1000000
-export const COSTO_AGREGAR_DIFUNTO_RESERVA = 10
+export const COSTO_AGREGAR_DIFUNTO_RESERVA = 120000
 
 export const PREGUNTAS_SOMBRA = [
   {

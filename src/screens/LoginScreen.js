@@ -5,8 +5,7 @@ import { OrnamentDivider } from '../components/OrnamentDivider'
 import { useTheme } from '../contexts/ThemeProvider'
 import { font } from '../theme/typography'
 import { useAuth } from '../contexts/useAuth'
-import { toastError, toastInfo } from '../lib/appToast'
-import { SUPABASE_DEBUG } from '../lib/supabase'
+import { toastError, toastInfo, toastSuccess } from '../lib/appToast'
 
 const LOGO_OSCURO = require('../../assets/logo.jpg')
 const LOGO_CLARO = require('../../assets/logo_claro.jpg')
@@ -28,6 +27,7 @@ export default function LoginScreen({ navigation }) {
     setLoading(true)
     try {
       await signIn(email.trim(), password)
+      toastSuccess('Umbral franqueado', 'Bienvenido al templo.')
     } catch (e) {
       const msg = e?.message || ''
       if (msg.includes('Network request failed')) {
@@ -57,12 +57,6 @@ export default function LoginScreen({ navigation }) {
       </View>
 
       <View style={styles.form}>
-        {__DEV__ ? (
-          <Text style={styles.debug}>
-            Supabase: {SUPABASE_DEBUG.url} ({SUPABASE_DEBUG.source}) · key:{' '}
-            {SUPABASE_DEBUG.hasAnonKey ? 'ok' : 'missing'}
-          </Text>
-        ) : null}
         <Text style={styles.label}>Correo</Text>
         <TextInput
           style={styles.input}
@@ -148,13 +142,6 @@ function buildStyles(colors) {
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.panel,
-    },
-    debug: {
-      color: colors.muted,
-      fontFamily: font.bodyItalic,
-      fontSize: 11,
-      lineHeight: 16,
-      marginBottom: 10,
     },
     label: {
       fontFamily: font.bodySemi,

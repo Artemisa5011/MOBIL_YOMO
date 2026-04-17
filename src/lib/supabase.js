@@ -13,26 +13,12 @@ const supabaseAnonKey =
   Constants.expoConfig?.extra?.supabaseAnonKey ||
   ''
 
-export const SUPABASE_DEBUG = {
-  url: supabaseUrl || 'https://placeholder.supabase.co',
-  hasAnonKey: Boolean(supabaseAnonKey),
-  source: supabaseUrl
-    ? process.env.EXPO_PUBLIC_SUPABASE_URL
-      ? 'EXPO_PUBLIC'
-      : process.env.VITE_SUPABASE_URL
-        ? 'VITE'
-        : Constants.expoConfig?.extra?.supabaseUrl
-          ? 'expoConfig.extra'
-          : 'unknown'
-    : 'fallback',
-}
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn(
-    'Supabase: configura EXPO_PUBLIC_SUPABASE_URL y EXPO_PUBLIC_SUPABASE_ANON_KEY (o VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY) en un archivo .env en la raíz del proyecto móvil.'
-  )
-} else {
-  console.warn(`Supabase: usando ${supabaseUrl}`)
+if (__DEV__) {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.log(
+      '[Supabase] Configura EXPO_PUBLIC_SUPABASE_URL y EXPO_PUBLIC_SUPABASE_ANON_KEY en .env (raíz del proyecto móvil).'
+    )
+  }
 }
 
 export const supabase = createClient(

@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { StyleSheet, View } from 'react-native'
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message'
 import { useTheme } from '../contexts/ThemeProvider'
 import { font } from '../theme/typography'
@@ -66,5 +67,13 @@ export function ThemedToast() {
     [colors]
   )
 
-  return <Toast config={config} position="top" topOffset={52} />
+  return (
+    <View pointerEvents="box-none" style={styles.toastLayer}>
+      <Toast config={config} position="top" topOffset={52} />
+    </View>
+  )
 }
+
+const styles = StyleSheet.create({
+  toastLayer: StyleSheet.absoluteFillObject,
+})

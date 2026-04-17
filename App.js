@@ -1,5 +1,7 @@
 import { StatusBar } from 'expo-status-bar' // eslint-disable-line no-unused-vars
-import { View, ActivityIndicator, StyleSheet } from 'react-native' 
+import { View, ActivityIndicator, StyleSheet } from 'react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { useFonts, CinzelDecorative_400Regular, CinzelDecorative_700Bold, CinzelDecorative_900Black } from '@expo-google-fonts/cinzel-decorative'
 import {
   Cormorant_400Regular,
@@ -31,11 +33,15 @@ export default function App() {
   }
 
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <AppShell />
-      </AuthProvider>
-    </ThemeProvider>
+    <GestureHandlerRootView style={styles.flex}>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <AppShell />
+          </AuthProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   )
 }
 
@@ -51,5 +57,6 @@ function AppShell() {
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   boot: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 })
