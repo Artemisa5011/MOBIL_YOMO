@@ -1,0 +1,23 @@
+{
+    "build": {
+        "preview":{
+            "distribution":"internal", 
+            "env":{
+                "EXPO_PUBLIC_API_MODE": "mock",
+                "EXPO_PUBLIC_ENABLE_REMOTE_SYNC":"true"
+            },
+            "android":{
+                "buildType":"apk"
+            }
+        },
+        "production":{
+            "env":{
+                "EXPO_PUBLIC_API_MODE": "mock",
+                "EXPO_PUBLIC_ENABLE_REMOTE_SYNC":"true"
+            },
+            "android":{
+                "buildType":"app-bundle"
+            }
+        }
+    }
+}
