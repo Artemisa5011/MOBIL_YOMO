@@ -71,7 +71,7 @@ export default function GuardadosScreen({ navigation }) {
     <GothicBackground style={styles.fill}>
       <View style={styles.container}>
         <Text style={styles.intro}>
-          Reliquias elegidas: quienes guardaste en el detalle permanecen sellados aquí (AsyncStorage), fuera del juicio
+          Reliquias elegidas: quienes guardaste en el detalle permanecen sellados aquí, fuera del juicio
           de la nube.
         </Text>
         <FlatList
