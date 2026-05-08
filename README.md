@@ -9,7 +9,7 @@
 **Objetivo:** que **Yomi No Hana** disponga de un **cliente móvil** fiable y alineado con el negocio funerario y de cementerio, conectado al **mismo Supabase** que otros canales (p. ej. web), para que:
 
 - el **equipo comercial y administración** registre y acompañe **clientes**, use el **panel** (funeraria y cementerio) y trabaje con datos actualizados **desde cualquier lugar**;
-- las **familias** con cuenta de **cliente portal** revisen **servicios y reservas** asociados a su perfil;
+- las **familias** con cuenta de **cliente portal** revisen **servicios y reservas** asociados a su perfil.
 - cualquier persona pueda **acercarse por contacto** o **registro** desde el teléfono;
 
 En síntesis: **misma verdad de datos en el servidor, mejor experiencia en el móvil** para quien vende, quien administra y quien contrata o consulta.
