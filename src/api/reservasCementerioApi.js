@@ -16,7 +16,7 @@ export async function listReservasConfirmadas() {
   const { data, error } = await supabase
     .from('reservas_cementerio')
     .select('*, lotes(nombre, codigo)')
-    .eq('estado_pago', 'confirmado')
+    .in('estado_pago', ['confirmado', 'confirmada', 'pagado', 'pagada'])
   if (error) throw parseError(error)
   return data || []
 }
@@ -27,17 +27,58 @@ export async function listReservasByClienteId(clienteId) {
     .from('reservas_cementerio')
     .select('*, lotes(nombre, codigo)')
     .eq('cliente_id', clienteId)
-    .eq('estado_pago', 'confirmado')
+    .in('estado_pago', ['confirmado', 'confirmada', 'pagado', 'pagada'])
     .order('created_at', { ascending: false })
   if (error) throw parseError(error)
   return data || []
 }
 
 export async function listMisReservas() {
+  // 1) Intentar por vínculo directo al usuario del portal (cliente_user_id)
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const uid = user?.id || null
+
+  if (uid) {
+    const { data, error } = await supabase
+      .from('reservas_cementerio')
+      .select('*, lotes(nombre, codigo)')
+      .in('estado_pago', ['confirmado', 'confirmada', 'pagado', 'pagada'])
+      .eq('cliente_user_id', uid)
+      .order('created_at', { ascending: false })
+    if (error) throw parseError(error)
+    if (Array.isArray(data) && data.length) return data
+  }
+
+  // 2) Fallback: resolver el cliente por cédula (si existe) o por correo (si la cuenta fue creada sin metadata)
+  const cedula = String(user?.user_metadata?.cedula || '').trim()
+  const email = String(user?.email || '').trim()
+
+  let clienteId = null
+  if (cedula) {
+    const { data: cliente, error: clienteErr } = await supabase
+      .from('clientes')
+      .select('id')
+      .eq('cedula', cedula)
+      .single()
+    if (!clienteErr) clienteId = cliente?.id || null
+  }
+  if (!clienteId && email) {
+    const { data: cliente, error: clienteErr } = await supabase
+      .from('clientes')
+      .select('id')
+      .ilike('correo', email)
+      .single()
+    if (!clienteErr) clienteId = cliente?.id || null
+  }
+  if (!clienteId) return []
+
   const { data, error } = await supabase
     .from('reservas_cementerio')
     .select('*, lotes(nombre, codigo)')
-    .eq('estado_pago', 'confirmado')
+    .in('estado_pago', ['confirmado', 'confirmada', 'pagado', 'pagada'])
+    .eq('cliente_id', clienteId)
     .order('created_at', { ascending: false })
   if (error) throw parseError(error)
   return data || []

@@ -139,6 +139,7 @@ function buildStyles(colors) {
       letterSpacing: 2,
       color: colors.gold,
       marginBottom: 12,
+      textAlign: 'center',
     },
     h1Spaced: { marginTop: 24 },
     muted: { color: colors.muted, lineHeight: 22, fontFamily: font.bodyItalic, fontSize: 16 },
@@ -153,6 +154,6 @@ function buildStyles(colors) {
       backgroundColor: colors.detailBg,
       marginBottom: 10,
     },
-    cardTitle: { color: colors.text, fontFamily: font.bodySemi, fontSize: 17 },
+    cardTitle: { color: colors.text, fontFamily: font.bodySemi, fontSize: 17, textAlign: 'center' },
   })
 }

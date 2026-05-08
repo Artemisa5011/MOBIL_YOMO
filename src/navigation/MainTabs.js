@@ -8,6 +8,7 @@ import PanelStack from './PanelStack'
 import ClientesStack from './ClientesStack'
 import GuardadosScreen from '../screens/GuardadosScreen'
 import MiCementerioScreen from '../screens/MiCementerioScreen'
+import PortalPerfilScreen from '../screens/PortalPerfilScreen'
 import { useAuth } from '../contexts/useAuth'
 import { useTheme } from '../contexts/ThemeProvider'
 import { font } from '../theme/typography'
@@ -67,15 +68,25 @@ export default function MainTabs() {
         }}
       />
       {isCliente ? (
-        <Tab.Screen
-          name="MiDifuntos"
-          component={MiCementerioScreen}
-          options={{
-            title: 'Mis difuntos',
-            tabBarAccessibilityLabel: 'Mis difuntos',
-            tabBarIcon: ({ color }) => <Ionicons name="flower-outline" size={iconSize} color={color} />,
-          }}
-        />
+        <>
+          <Tab.Screen
+            name="MiDifuntos"
+            component={MiCementerioScreen}
+            options={{
+              title: 'Mis difuntos',
+              tabBarAccessibilityLabel: 'Mis difuntos',
+              tabBarIcon: ({ color }) => <Ionicons name="flower-outline" size={iconSize} color={color} />,
+            }}
+          />
+          <Tab.Screen
+            name="PortalPerfil"
+            component={PortalPerfilScreen}
+            options={{
+              title: 'Perfil',
+              tabBarButton: () => null,
+            }}
+          />
+        </>
       ) : (
         <>
           <Tab.Screen

@@ -75,7 +75,7 @@ function buildStyles(colors) {
       borderColor: colors.goldMuted,
       backgroundColor: colors.dashboardTile2,
     },
-    cardTitle: { fontFamily: font.displayRegular, fontSize: 16, letterSpacing: 1, color: colors.gold },
-    cardDesc: { fontFamily: font.body, color: colors.textDim, marginTop: 6, fontSize: 15 },
+    cardTitle: { fontFamily: font.displayRegular, fontSize: 16, letterSpacing: 1, color: colors.gold, textAlign: 'center' },
+    cardDesc: { fontFamily: font.body, color: colors.textDim, marginTop: 6, fontSize: 15, textAlign: 'justify' },
   })
 }

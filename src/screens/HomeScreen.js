@@ -20,6 +20,7 @@ import * as solicitudesApi from '../api/solicitudesApi'
 import { toastSuccess, toastError, toastInfo } from '../lib/appToast'
 import { supabase } from '../lib/supabase'
 import * as lotesApi from '../api/lotesApi'
+import { Ionicons } from '@expo/vector-icons'
 import {
   SERVICIOS_FUNERARIA,
   COSTO_CAMBIO_LOTE,
@@ -33,10 +34,12 @@ const emptyForm = () => ({ nombre: '', cedula: '', telefono: '', correo: '', men
 
 const fmt = (n) => Number(n ?? 0).toLocaleString('es-CO')
 
+const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim())
+
 export default function HomeScreen({ navigation }) {
   const { colors, isDark, setMode } = useTheme()
   const styles = useMemo(() => buildStyles(colors), [colors])
-  const { isAuthenticated, isVendedor, isCliente, nombreCompleto, signOut } = useAuth()
+  const { isAuthenticated, isVendedor, isCliente, isAdmin, nombreCompleto, signOut } = useAuth()
   const [form, setForm] = useState(emptyForm)
   const [enviando, setEnviando] = useState(false)
   const [modalServicio, setModalServicio] = useState(null)
@@ -125,6 +128,10 @@ export default function HomeScreen({ navigation }) {
       toastInfo('Formulario incompleto', 'Completa nombre, cédula, correo y mensaje.')
       return
     }
+    if (!isValidEmail(form.correo)) {
+      toastInfo('Correo', 'Incluye un signo "@" en la dirección de correo electrónico.')
+      return
+    }
     setEnviando(true)
     try {
       await solicitudesApi.insertarSolicitud(form)
@@ -136,6 +143,145 @@ export default function HomeScreen({ navigation }) {
       setEnviando(false)
     }
   }
+
+  useEffect(() => {
+    const rolLabel = isAdmin ? 'Admin' : isCliente ? 'Cliente' : isVendedor ? 'Vendedor' : ''
+    navigation.setOptions({
+      headerTitleAlign: 'center',
+      headerTitle: () =>
+        isAuthenticated ? (
+          <View style={styles.headerUserWrap}>
+            <Text style={styles.headerUserName} numberOfLines={1}>
+              {nombreCompleto}
+            </Text>
+            {rolLabel ? (
+              <Text style={styles.headerUserRole} numberOfLines={1}>
+                {rolLabel}
+              </Text>
+            ) : null}
+          </View>
+        ) : (
+          <Text style={styles.headerTitle}>Inicio</Text>
+        ),
+      headerLeft: () => (
+        <View style={styles.headerThemeWrap} accessibilityRole="tablist">
+          <Pressable
+            onPress={() => setMode('light')}
+            style={({ pressed }) => [
+              styles.headerThemeBtn,
+              !isDark && styles.headerThemeBtnActive,
+              pressed && styles.pressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: !isDark }}
+            accessibilityLabel="Tema claro"
+            hitSlop={8}
+          >
+            <Ionicons
+              name="sunny-outline"
+              size={18}
+              color={!isDark ? colors.text : colors.muted}
+              accessibilityElementsHidden
+              importantForAccessibility="no"
+            />
+          </Pressable>
+          <Pressable
+            onPress={() => setMode('dark')}
+            style={({ pressed }) => [
+              styles.headerThemeBtn,
+              isDark && styles.headerThemeBtnActive,
+              pressed && styles.pressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: isDark }}
+            accessibilityLabel="Tema oscuro"
+            hitSlop={8}
+          >
+            <Ionicons
+              name="moon-outline"
+              size={18}
+              color={isDark ? colors.text : colors.muted}
+              accessibilityElementsHidden
+              importantForAccessibility="no"
+            />
+          </Pressable>
+        </View>
+      ),
+      headerRight: () => (
+        <View style={styles.headerAuthWrap}>
+          {!isAuthenticated ? (
+            <>
+              <Pressable
+                onPress={() => navigation.navigate('Login')}
+                style={({ pressed }) => [styles.headerAuthBtn, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel="Iniciar sesión"
+                hitSlop={8}
+              >
+                <Ionicons
+                  name="log-in-outline"
+                  size={19}
+                  color={colors.gold}
+                  accessibilityElementsHidden
+                  importantForAccessibility="no"
+                />
+              </Pressable>
+              <Pressable
+                onPress={() => navigation.navigate('RegistroCliente')}
+                style={({ pressed }) => [styles.headerAuthBtn, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel="Crear cuenta cliente"
+                hitSlop={8}
+              >
+                <Ionicons
+                  name="person-add-outline"
+                  size={19}
+                  color={colors.gold}
+                  accessibilityElementsHidden
+                  importantForAccessibility="no"
+                />
+              </Pressable>
+            </>
+          ) : (
+            <>
+              {isCliente ? (
+                <Pressable
+                  onPress={() => navigation.navigate('PortalPerfil')}
+                  style={({ pressed }) => [styles.headerAuthBtn, pressed && styles.pressed]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Perfil portal"
+                  hitSlop={8}
+                >
+                  <Ionicons
+                    name="person-circle-outline"
+                    size={20}
+                    color={colors.gold}
+                    accessibilityElementsHidden
+                    importantForAccessibility="no"
+                  />
+                </Pressable>
+              ) : null}
+              <Pressable
+                onPress={() => signOut()}
+                style={({ pressed }) => [styles.headerAuthBtn, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar sesión"
+                hitSlop={8}
+              >
+                <Ionicons
+                  name="log-out-outline"
+                  size={19}
+                  color={colors.gold}
+                  accessibilityElementsHidden
+                  importantForAccessibility="no"
+                />
+              </Pressable>
+            </>
+          )}
+        </View>
+      ),
+    })
+  }, [navigation, styles, setMode, isDark, colors, isAuthenticated, nombreCompleto, isAdmin, isCliente, isVendedor, signOut])
 
   return (
     <ScreenScroll
@@ -183,84 +329,6 @@ export default function HomeScreen({ navigation }) {
           </Pressable>
           <Pressable style={styles.servicioBtn} onPress={() => setModalServicio('cementerio')}>
             <Text style={styles.servicioBtnTxt}>Cementerio</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      <View style={styles.accessBox}>
-        {!isAuthenticated ? (
-          <>
-            <Text style={styles.accessTitle}>Acceso</Text>
-            <Text style={styles.accessHint}>Cruza el umbral si ya tienes cuenta, o regístrate como cliente del portal.</Text>
-            <View style={styles.accessRow}>
-              <Pressable
-                style={({ pressed }) => [styles.accessBtnMain, pressed && styles.pressed]}
-                onPress={() => navigation.navigate('Login')}
-                android_ripple={{ color: colors.accentGlow }}
-              >
-                <Text style={styles.accessBtnMainTxt}>Iniciar sesión</Text>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [styles.accessBtnOutline, pressed && styles.pressed]}
-                onPress={() => navigation.navigate('RegistroCliente')}
-                android_ripple={{ color: colors.accentGlow }}
-              >
-                <Text style={styles.accessBtnOutlineTxt}>Cuenta cliente</Text>
-              </Pressable>
-            </View>
-            <Text style={styles.accessMicro}>Mis difuntos · reservas y servicios a tu nombre</Text>
-          </>
-        ) : (
-          <>
-            <Text style={styles.sessionLabel}>Presencia reconocida</Text>
-            <Text style={styles.sessionName} selectable>
-              {nombreCompleto}
-            </Text>
-            <Text style={styles.role}>
-              {isCliente ? 'Cliente del portal' : isVendedor ? 'Vendedor o administrador' : 'Rol no definido'}
-            </Text>
-            <View style={styles.sessionDividerWrap}>
-              <OrnamentDivider />
-            </View>
-            <Pressable
-              style={({ pressed }) => [styles.btnGhost, pressed && styles.pressed]}
-              onPress={() => signOut()}
-              android_ripple={{ color: colors.ripple }}
-            >
-              <Text style={styles.btnGhostText}>Cerrar sesión</Text>
-            </Pressable>
-          </>
-        )}
-      </View>
-
-      <View style={styles.themeRow}>
-        <Text style={styles.themeLabel}>Tema</Text>
-        <View style={styles.themeSegment} accessibilityRole="tablist">
-          <Pressable
-            onPress={() => setMode('light')}
-            style={({ pressed }) => [
-              styles.themeSegBtn,
-              !isDark && styles.themeSegBtnActive,
-              pressed && styles.pressed,
-            ]}
-            accessibilityRole="button"
-            accessibilityState={{ selected: !isDark }}
-            accessibilityLabel="Tema claro"
-          >
-            <Text style={[styles.themeSegTxt, !isDark && styles.themeSegTxtActive]}>Claro</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setMode('dark')}
-            style={({ pressed }) => [
-              styles.themeSegBtn,
-              isDark && styles.themeSegBtnActive,
-              pressed && styles.pressed,
-            ]}
-            accessibilityRole="button"
-            accessibilityState={{ selected: isDark }}
-            accessibilityLabel="Tema oscuro"
-          >
-            <Text style={[styles.themeSegTxt, isDark && styles.themeSegTxtActive]}>Oscuro</Text>
           </Pressable>
         </View>
       </View>
@@ -509,6 +577,7 @@ function buildStyles(colors) {
       letterSpacing: 4,
       color: colors.gold,
       marginBottom: 10,
+      textAlign: 'center',
     },
     body: {
       fontFamily: font.body,
@@ -534,6 +603,7 @@ function buildStyles(colors) {
       letterSpacing: 3,
       color: colors.gold,
       marginBottom: 6,
+      textAlign: 'center',
     },
     serviciosHint: { color: colors.muted, fontFamily: font.bodyItalic, marginBottom: 12 },
     serviciosRow: { flexDirection: 'row', gap: 12, justifyContent: 'center' },
@@ -620,27 +690,7 @@ function buildStyles(colors) {
       fontSize: 10,
       lineHeight: 14,
     },
-    themeRow: {
-      marginTop: 12,
-      paddingVertical: 7,
-      paddingHorizontal: 11,
-      borderRadius: 999,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.panel,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 8,
-    },
-    themeLabel: {
-      fontFamily: font.bodySemi,
-      fontSize: 10,
-      letterSpacing: 1.4,
-      textTransform: 'uppercase',
-      color: colors.muted,
-    },
-    themeSegment: {
+    headerThemeWrap: {
       flexDirection: 'row',
       alignItems: 'center',
       borderRadius: 999,
@@ -648,23 +698,53 @@ function buildStyles(colors) {
       backgroundColor: colors.card,
       borderWidth: 1,
       borderColor: colors.border,
+      marginLeft: 6,
     },
-    themeSegBtn: {
-      paddingVertical: 5,
-      paddingHorizontal: 12,
+    headerThemeBtn: {
+      width: 36,
+      height: 30,
+      alignItems: 'center',
+      justifyContent: 'center',
       borderRadius: 999,
     },
-    themeSegBtnActive: {
+    headerThemeBtnActive: {
       backgroundColor: colors.accentSoft,
     },
-    themeSegTxt: {
-      fontFamily: font.body,
-      fontSize: 11,
-      color: colors.muted,
+    headerTitle: {
+      fontFamily: font.displayRegular,
+      fontSize: 14,
+      letterSpacing: 1,
+      color: colors.gold,
     },
-    themeSegTxtActive: {
+    headerUserWrap: { alignItems: 'center', justifyContent: 'center' },
+    headerUserName: {
       fontFamily: font.bodySemi,
+      fontSize: 12,
       color: colors.text,
+      maxWidth: 170,
+    },
+    headerUserRole: {
+      marginTop: 1,
+      fontFamily: font.bodyItalic,
+      fontSize: 10,
+      color: colors.muted,
+      maxWidth: 170,
+    },
+    headerAuthWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginRight: 6,
+    },
+    headerAuthBtn: {
+      width: 34,
+      height: 34,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
     },
     modalOverlay: {
       flex: 1,
@@ -684,7 +764,14 @@ function buildStyles(colors) {
     modalLayout: { height: '100%' },
     modalScroll: { flex: 1 },
     modalScrollInner: { paddingBottom: 12 },
-    modalTitle: { fontFamily: font.displayHeavy, fontSize: 18, color: colors.accent, marginBottom: 8, letterSpacing: 0.3 },
+    modalTitle: {
+      fontFamily: font.displayHeavy,
+      fontSize: 18,
+      color: colors.accent,
+      marginBottom: 8,
+      letterSpacing: 0.3,
+      textAlign: 'center',
+    },
     modalBody: { color: colors.textDim, fontFamily: font.body, fontSize: 13, lineHeight: 19, marginBottom: 12, textAlign: 'justify' },
     modalSubTitle: {
       fontFamily: font.bodySemi,
@@ -694,6 +781,7 @@ function buildStyles(colors) {
       color: colors.goldMuted,
       marginTop: 10,
       marginBottom: 6,
+      textAlign: 'center',
     },
     precioRow: {
       flexDirection: 'row',
@@ -780,6 +868,7 @@ function buildStyles(colors) {
       letterSpacing: 3,
       color: colors.accent,
       marginBottom: 8,
+      textAlign: 'center',
     },
     contactIntro: {
       fontFamily: font.body,

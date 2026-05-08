@@ -6,9 +6,12 @@ import { font } from '../theme/typography'
 import { useAuth } from '../contexts/useAuth'
 import { supabase } from '../lib/supabase'
 import { toastSuccess, toastError, toastInfo } from '../lib/appToast'
+import { Ionicons } from '@expo/vector-icons'
 
 const LOGO_OSCURO = require('../../assets/logo.jpg')
 const LOGO_CLARO = require('../../assets/logo_claro.jpg')
+
+const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim())
 
 function validarPassword(pwd) {
   if (!pwd || pwd.length < 6) return { ok: false, msg: 'Mínimo 6 caracteres' }
@@ -25,10 +28,15 @@ export default function RegistroClienteScreen({ navigation }) {
   const { signUp } = useAuth()
   const [form, setForm] = useState({ cedula: '', correo: '', password: '' })
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const submit = async () => {
     if (!form.cedula || !form.correo || !form.password) {
       toastInfo('Datos', 'Completa cédula, correo y contraseña')
+      return
+    }
+    if (!isValidEmail(form.correo)) {
+      toastInfo('Correo', 'Incluye un signo "@" en la dirección de correo electrónico.')
       return
     }
     const pwdCheck = validarPassword(form.password)
@@ -86,14 +94,27 @@ export default function RegistroClienteScreen({ navigation }) {
         value={form.correo}
         onChangeText={(t) => setForm((f) => ({ ...f, correo: t }))}
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Contraseña"
-        placeholderTextColor={colors.muted}
-        secureTextEntry
-        value={form.password}
-        onChangeText={(t) => setForm((f) => ({ ...f, password: t }))}
-      />
+      <View style={styles.passwordWrap}>
+        <TextInput
+          style={[styles.input, styles.passwordInput]}
+          placeholder="Contraseña"
+          placeholderTextColor={colors.muted}
+          secureTextEntry={!showPassword}
+          autoCapitalize="none"
+          autoCorrect={false}
+          value={form.password}
+          onChangeText={(t) => setForm((f) => ({ ...f, password: t }))}
+        />
+        <Pressable
+          style={({ pressed }) => [styles.passwordToggle, pressed && styles.pressed]}
+          onPress={() => setShowPassword((v) => !v)}
+          accessibilityRole="button"
+          accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+          hitSlop={8}
+        >
+          <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.muted} />
+        </Pressable>
+      </View>
       <Text style={styles.hint}>Mín. 6 caracteres: mayúscula, minúscula, número y símbolo.</Text>
       <Pressable style={[styles.btn, loading && styles.disabled]} onPress={submit} disabled={loading}>
         {loading ? <ActivityIndicator color={colors.text} /> : <Text style={styles.btnTxt}>Registrarme</Text>}
@@ -122,11 +143,28 @@ function buildStyles(colors) {
       fontFamily: font.body,
       fontSize: 17,
     },
+    passwordWrap: {
+      position: 'relative',
+      justifyContent: 'center',
+    },
+    passwordInput: {
+      paddingRight: 46,
+    },
+    passwordToggle: {
+      position: 'absolute',
+      right: 10,
+      top: 0,
+      bottom: 12,
+      width: 36,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     hint: { color: colors.muted, fontSize: 12, marginBottom: 12 },
     btn: { backgroundColor: colors.accentSoft, padding: 16, alignItems: 'center', borderRadius: 2 },
     disabled: { opacity: 0.6 },
     btnTxt: { color: colors.text, fontFamily: font.displayRegular, letterSpacing: 1 },
     link: { marginTop: 20, alignItems: 'center' },
     linkTxt: { color: colors.accent, fontFamily: font.bodyItalic },
+    pressed: { opacity: 0.85 },
   })
 }

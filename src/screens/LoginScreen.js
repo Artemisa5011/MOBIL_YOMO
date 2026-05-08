@@ -6,6 +6,7 @@ import { useTheme } from '../contexts/ThemeProvider'
 import { font } from '../theme/typography'
 import { useAuth } from '../contexts/useAuth'
 import { toastError, toastInfo, toastSuccess } from '../lib/appToast'
+import { Ionicons } from '@expo/vector-icons'
 
 const LOGO_OSCURO = require('../../assets/logo.jpg')
 const LOGO_CLARO = require('../../assets/logo_claro.jpg')
@@ -75,6 +76,8 @@ export default function LoginScreen({ navigation }) {
             placeholder="••••••••"
             placeholderTextColor={colors.muted}
             secureTextEntry={!showPassword}
+            autoCapitalize="none"
+            autoCorrect={false}
             value={password}
             onChangeText={setPassword}
           />
@@ -83,8 +86,9 @@ export default function LoginScreen({ navigation }) {
             style={({ pressed }) => [styles.showBtn, pressed && styles.pressed]}
             accessibilityRole="button"
             accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+            hitSlop={8}
           >
-            <Text style={styles.showBtnText}>{showPassword ? 'Ocultar' : 'Mostrar'}</Text>
+            <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.muted} />
           </Pressable>
         </View>
 
@@ -163,8 +167,8 @@ function buildStyles(colors) {
     passwordRow: { flexDirection: 'row', gap: 10, alignItems: 'center', marginBottom: 16 },
     passwordInput: { flex: 1, marginBottom: 0 },
     showBtn: {
-      paddingHorizontal: 12,
-      paddingVertical: 12,
+      width: 44,
+      height: 48,
       borderRadius: 2,
       borderWidth: 1,
       borderColor: colors.border,
@@ -172,7 +176,6 @@ function buildStyles(colors) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    showBtnText: { color: colors.accent, fontFamily: font.bodySemi, fontSize: 13 },
     btn: {
       marginTop: 4,
       paddingVertical: 16,

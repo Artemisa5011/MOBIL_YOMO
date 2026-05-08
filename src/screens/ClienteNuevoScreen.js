@@ -95,7 +95,7 @@ export default function ClienteNuevoScreen({ navigation, route }) {
 // Función para renderizar el componente
   return (
     <ScreenScroll>
-      <Text style={styles.note}>Los campos con * son obligatorios (validación del taller).</Text>
+      <Text style={styles.note}>Los campos con * son obligatorios.</Text>
 
       <Field
         label="Cédula *"

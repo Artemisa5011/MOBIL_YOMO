@@ -210,7 +210,14 @@ function buildStyles(colors) { // buildStyles: función para crear el estilo del
     },
     chipOn: { borderColor: colors.accent, backgroundColor: colors.chipOn },
     chipText: { color: colors.textDim, fontFamily: font.displayRegular, fontSize: 12, letterSpacing: 0.5 },
-    h1: { fontFamily: font.displayHeavy, fontSize: 22, color: colors.text, marginBottom: 12, letterSpacing: 0.5 },
+    h1: {
+      fontFamily: font.displayHeavy,
+      fontSize: 22,
+      color: colors.text,
+      marginBottom: 12,
+      letterSpacing: 0.5,
+      textAlign: 'center',
+    },
     line: { color: colors.textDim, marginBottom: 6, fontFamily: font.body, fontSize: 17 },
     section: {
       marginTop: 20,
@@ -231,7 +238,7 @@ function buildStyles(colors) { // buildStyles: función para crear el estilo del
       backgroundColor: colors.detailBg,
       marginBottom: 8,
     },
-    cardTitle: { color: colors.text, fontFamily: font.bodySemi, fontSize: 16 },
+    cardTitle: { color: colors.text, fontFamily: font.bodySemi, fontSize: 16, textAlign: 'center' },
     danger: {
       marginTop: 24,
       padding: 14,

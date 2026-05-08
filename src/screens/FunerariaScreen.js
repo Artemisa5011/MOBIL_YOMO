@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   FlatList,
 } from 'react-native'
+import DateTimePicker from '@react-native-community/datetimepicker'
 import { useFocusEffect } from '@react-navigation/native'
 import { GothicBackground } from '../components/GothicBackground'
 import * as clientesApi from '../api/clientesApi'
@@ -23,6 +24,12 @@ import { font } from '../theme/typography'
 import { toastSuccess, toastError, toastInfo } from '../lib/appToast'
 
 const fmt = (n) => Number(n ?? 0).toLocaleString('es-CO')
+const toYMD = (d) => {
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
 
 export default function FunerariaScreen({ route, navigation }) {
   const { colors } = useTheme()
@@ -35,6 +42,7 @@ export default function FunerariaScreen({ route, navigation }) {
   const [nombreDifunto, setNombreDifunto] = useState('')
   const [fecha, setFecha] = useState('')
   const [hora, setHora] = useState('')
+  const [showDatePicker, setShowDatePicker] = useState(false)
   const [metodoPago, setMetodoPago] = useState('')
   const [nombreCondenado, setNombreCondenado] = useState('')
   const [tarjetaNumero, setTarjetaNumero] = useState('')
@@ -255,13 +263,16 @@ export default function FunerariaScreen({ route, navigation }) {
         ) : null}
 
         <View style={styles.rowWrap}>
-          <TextInput
-            style={styles.inputDate}
-            placeholder="Fecha AAAA-MM-DD"
-            placeholderTextColor={colors.muted}
-            value={fecha}
-            onChangeText={setFecha}
-          />
+          <Pressable style={styles.inputDate} onPress={() => setShowDatePicker(true)}>
+            <TextInput
+              style={styles.inputDateInner}
+              placeholder="Fecha AAAA-MM-DD"
+              placeholderTextColor={colors.muted}
+              value={fecha}
+              editable={false}
+              pointerEvents="none"
+            />
+          </Pressable>
           <View style={styles.horas}>
             {HORAS_FUNERARIA.map((h) => (
               <Pressable
@@ -274,6 +285,18 @@ export default function FunerariaScreen({ route, navigation }) {
             ))}
           </View>
         </View>
+
+        {showDatePicker ? (
+          <DateTimePicker
+            value={fecha ? new Date(`${fecha}T00:00:00`) : new Date()}
+            mode="date"
+            display="calendar"
+            onChange={(_, selectedDate) => {
+              setShowDatePicker(false)
+              if (selectedDate) setFecha(toYMD(selectedDate))
+            }}
+          />
+        ) : null}
 
         {SERVICIOS_FUNERARIA.map((s) => (
           <View key={s.tipo} style={styles.servCard}>
@@ -426,7 +449,21 @@ function buildStyles(colors) {
       backgroundColor: colors.inputBg,
       marginBottom: 8,
     },
-    inputDate: { minWidth: 140, flex: 1 },
+    inputDate: {
+      minWidth: 140,
+      flex: 1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      backgroundColor: colors.inputBg,
+      justifyContent: 'center',
+    },
+    inputDateInner: {
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      color: colors.text,
+      fontFamily: font.body,
+    },
     flex1: { flex: 1 },
     cvv: { width: 80 },
     btnBuscar: {

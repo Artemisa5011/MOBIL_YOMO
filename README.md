@@ -77,6 +77,7 @@ La estructura de este repo (**Expo**, capas `api/` / `screens/` / `navigation/`)
 | Gestos / root wrappers | `react-native-gesture-handler` + `SafeAreaProvider` (mejor respuesta táctil y soporte edge-to-edge) |
 | Fuentes | `@expo-google-fonts` (Cinzel Decorative, Cormorant) en `App.js` |
 | Mensajes no bloqueantes | **`react-native-toast-message`** (toasts con tema en `src/components/ThemedToast.jsx`; API cómoda en `src/lib/appToast.js`) |
+| Selector de fecha (calendario) | `@react-native-community/datetimepicker` (en Funeraria/Cementerio cuando aplique) |
 
 ---
 
@@ -144,6 +145,10 @@ Orden lógico del stack (nombres internos de ruta → pantalla):
 
 Desde **Inicio** el usuario puede ir a login o registro; el contenido de inicio (contacto, apariencia, etc.) es el mismo tipo de pantalla que verá también como pestaña cuando ya esté logueado (mismo componente `HomeScreen`).
 
+**Mejoras UX en formularios (móvil):**
+- **Ver contraseña:** icono de ojo en **Login** y **Registro cliente** para mostrar/ocultar.
+- **Validación de correo:** se valida formato (ej. contiene `@` + dominio) en **Contacto** y **Registro cliente**.
+
 ### 6.2 Con sesión — vendedor o admin (`MainTabs`)
 
 Pestañas inferiores:
@@ -180,6 +185,8 @@ Pestañas inferiores:
 | **Inicio** | `HomeScreen` |
 | **Mis difuntos** | `MiCementerioScreen.js` |
 
+**Perfil portal (ruta oculta):** existe una pantalla `PortalPerfilScreen.js` (ruta `PortalPerfil`) para que el cliente guarde su cédula en su cuenta. No aparece como tab inferior; se abre desde **Inicio** con el icono de perfil en el header (solo rol cliente).
+
 ### 6.6 Diagrama rápido (quién ve qué)
 
 ```mermaid
@@ -203,8 +210,11 @@ flowchart TD
 
 - Identidad visual (fondo con degradado `GothicBackground`, tipografía).
 - Formulario de **contacto** (público); envío vía API de solicitudes.
-- **Apariencia:** selector **compacto** (segmentado) para **tema claro / oscuro** (se guarda en el dispositivo).
-- **Acceso (compacto, debajo de Servicios):** botones **Iniciar sesión** y **Cuenta cliente** cuando no hay sesión. Con sesión muestra tarjeta de presencia + **Cerrar sesión**.
+- **Apariencia:** toggle **sol/luna** para **tema claro / oscuro** en el **header (arriba izquierda)** (se guarda en el dispositivo).
+- **Sesión (header):**
+  - **Sin sesión:** iconos en el **header (arriba derecha)** para **Iniciar sesión** y **Registro cliente**.
+  - **Con sesión:** icono para **Cerrar sesión**; y si es **cliente portal**, acceso a **Perfil portal** (ver § Mis difuntos / Perfil).
+- **Header centrado:** cuando hay sesión muestra **correo/nombre** y **rol** en el título del header.
 - **Pull-to-refresh:** el `ScrollView` de `ScreenScroll` soporta `RefreshControl`; en Inicio se usa para re-leer sesión (`supabase.auth.getSession()`).
 - **Servicios (modales informativos):**
   - **Funeraria:** muestra **lista de servicios y precios** desde `SERVICIOS_FUNERARIA` (constantes).
@@ -215,6 +225,7 @@ flowchart TD
 
 - **Dashboard:** punto de entrada al panel comercial.
 - **Funeraria:** venta / gestión de línea funeraria; datos en Supabase; donde aplica, **Realtime** (hooks en `src/hooks/`).
+- **Funeraria (fecha):** el campo de **Fecha** abre un **calendario nativo** (date picker) y rellena `AAAA-MM-DD`.
 - **Cementerio:** reservas y lotes relacionados con cementerio; también Realtime donde esté configurado.
 - **Cementerio (catálogo visible):** además del flujo de reserva, muestra un bloque **Catálogo de lotes** (nombre + precio + ocupación) con botón **Actualizar**.
 - **Administración** (sobre todo rol 666): acciones como vínculos por cédula y listado de solicitudes (la gestión pesada de empleados puede vivir en otras herramientas).
@@ -237,11 +248,14 @@ Desde el **detalle de un cliente** se puede pasar a funeraria o cementerio con l
 ### Mis difuntos (`MiCementerioScreen` + bloques relacionados)
 
 - Para el **cliente portal:** servicios y reservas vinculados a su cuenta (incluye piezas como `CementerioReservasBlock.js` donde aplique).
+- **Importante (vinculación):** para que el cliente vea compras previas, el backend debe **vincular** `cliente_user_id` en `servicios_funerarios` / `reservas_cementerio` al **UUID** del usuario portal. Si queda `NULL`, el cliente no verá nada por RLS.
+- **Perfil portal (`PortalPerfilScreen.js`):** pantalla donde el cliente puede **guardar su cédula** en su cuenta (metadata). Se abre desde **Inicio** (icono de perfil en el header).
 
 ### Detalles de implementación útiles al leer código
 
 - **Navegación y tema:** `NavigationContainer` en `RootNavigator.js` usa los mismos colores que `ThemeProvider` (fondo, tarjetas, texto, borde, primario).
 - **Teclado:** en tabs, `tabBarHideOnKeyboard: true` para que la barra inferior no tape campos al escribir.
+- **Teclado (inputs):** `ScreenScroll` usa `KeyboardAvoidingView` para que el teclado no tape los campos en pantallas con formulario.
 - **Barra inferior (tabs):** configuración en `src/navigation/MainTabs.js`.
   - Estilo **compacto** y **solo iconos** (`tabBarShowLabel: false`) para diferenciarla de los botones del sistema Android.
   - Respeta **Safe Area** (inset inferior) para que los toques funcionen bien en Android con navegación por gestos / edge-to-edge.
@@ -440,7 +454,7 @@ assets/         Imágenes, iconos, fuentes adicionales si las hubiera
 | Permisos / errores de lectura en tablas | Usuario y **RLS** en Supabase acordes al rol |
 | No aparecen lotes en Inicio / Cementerio | Revisa RLS en `lotes`: policy de **SELECT** para `authenticated` (si quieres solo logueados) o también para `anon` (si quieres catálogo público). Si la policy filtra por rol, `USING` puede devolver 0 filas aunque existan. |
 | Expo Go “SDK incompatible” | Actualiza Expo Go; el proyecto usa **SDK 54** |
-| Mis difuntos vacío | Puede ser normal si no hay datos o vínculos en backend |
+| Mis difuntos vacío (cliente) | Verifica que `cliente_user_id` no quede `NULL` y que la cuenta portal tenga la **cédula correcta**. Luego usa la **vinculación por cédula** (admin) si hay compras previas. |
 | Errores de red | Proyecto Supabase pausado → **Resume** en el dashboard |
 | Deep link no abre la pantalla esperada | Sesión, rol y `rootLinking.js` deben coincidir con la ruta |
 | No aparece ningún toast | Comprueba que **`ThemedToast`** siga renderizado en `App.js` / `AppShell` y que llames a `toastSuccess` / `toastError` / `toastInfo` desde código que ya se ejecutó tras el login |
@@ -471,7 +485,7 @@ npm run android
 npm run ios
 ```
 
-**Dependencias relevantes:** `expo`, `expo-linking`, `@react-navigation/native`, `@react-navigation/bottom-tabs`, `@react-navigation/native-stack`, `@supabase/supabase-js`, `@react-native-async-storage/async-storage`, `expo-linear-gradient`, `expo-font`, **`react-native-toast-message`** (toasts globales; ver [Toasts y mensajes cortos](#toasts-y-mensajes-cortos)).
+**Dependencias relevantes:** `expo`, `expo-linking`, `@react-navigation/native`, `@react-navigation/bottom-tabs`, `@react-navigation/native-stack`, `@supabase/supabase-js`, `@react-native-async-storage/async-storage`, `expo-linear-gradient`, `expo-font`, **`react-native-toast-message`** (toasts globales; ver [Toasts y mensajes cortos](#toasts-y-mensajes-cortos)), `@react-native-community/datetimepicker` (selector de fecha).
 
 Si clonas el repo en otra máquina, **`npm install`** ya incluye `react-native-toast-message` por el `package.json`. Para añadirla manualmente en un proyecto Expo alineado: `npx expo install react-native-toast-message`.
 
